@@ -1,0 +1,383 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://smtlounge.github.io/smtlounge-approved-research-feed/schema/approved-research-feed.schema.json",
+  "title": "SMT Lounge approved research feed",
+  "description": "Allowlisted public-safe records only. Private scanner, review, candidate, and history fields are intentionally excluded. Tracker and follow-up returns are measured since original selection; sector comparisons are independently measured quarter-to-date from the quarter-start reference.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "generated_at_utc",
+    "records"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.0"
+    },
+    "generated_at_utc": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "Z$"
+    },
+    "records": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/record"
+      }
+    }
+  },
+  "$defs": {
+    "observation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "observed_at_utc",
+        "close",
+        "return_pct",
+        "source",
+        "price_basis"
+      ],
+      "properties": {
+        "observed_at_utc": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "Z$"
+        },
+        "close": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "return_pct": {
+          "type": "number",
+          "description": "Performance relative to the record original_selection.price; this is not quarter-to-date performance."
+        },
+        "source": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "price_basis": {
+          "enum": [
+            "split_adjusted_close",
+            "unadjusted_close"
+          ]
+        }
+      }
+    },
+    "follow_up": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "status",
+            "observation"
+          ],
+          "properties": {
+            "status": {
+              "const": "recorded"
+            },
+            "observation": {
+              "$ref": "#/$defs/observation"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "status",
+            "reason"
+          ],
+          "properties": {
+            "status": {
+              "const": "not_yet_due"
+            },
+            "reason": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 300
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "status",
+            "reason",
+            "checked_at_utc"
+          ],
+          "properties": {
+            "status": {
+              "const": "unavailable"
+            },
+            "reason": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 300
+            },
+            "checked_at_utc": {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "Z$"
+            }
+          }
+        }
+      ]
+    },
+    "sector_comparison": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "sector",
+        "sector_etf",
+        "period",
+        "as_of_date",
+        "stock_return_pct",
+        "sector_etf_return_pct",
+        "relative_outperformance_pp",
+        "source"
+      ],
+      "properties": {
+        "status": {
+          "const": "verified"
+        },
+        "sector": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "sector_etf": {
+          "type": "string",
+          "pattern": "^[A-Z0-9.\\-]{1,15}$"
+        },
+        "period": {
+          "const": "QTD",
+          "description": "Return fields in this object use the quarter-start reference through as_of_date, independently of the original selection date."
+        },
+        "as_of_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "stock_return_pct": {
+          "type": "number"
+        },
+        "sector_etf_return_pct": {
+          "type": "number"
+        },
+        "relative_outperformance_pp": {
+          "type": "number"
+        },
+        "source": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        }
+      }
+    },
+    "comparative_series": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "stock_symbol",
+        "sector_etf",
+        "price_basis",
+        "source",
+        "points"
+      ],
+      "properties": {
+        "stock_symbol": {
+          "type": "string",
+          "pattern": "^[A-Z0-9.\\\\-]{1,20}$"
+        },
+        "sector_etf": {
+          "type": "string",
+          "pattern": "^[A-Z0-9.\\\\-]{1,15}$"
+        },
+        "price_basis": {
+          "enum": [
+            "split_adjusted_close",
+            "unadjusted_close"
+          ]
+        },
+        "source": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "points": {
+          "type": "array",
+          "minItems": 2,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "observed_on",
+              "stock_close",
+              "sector_etf_close"
+            ],
+            "properties": {
+              "observed_on": {
+                "type": "string",
+                "format": "date"
+              },
+              "stock_close": {
+                "type": "number",
+                "exclusiveMinimum": 0
+              },
+              "sector_etf_close": {
+                "type": "number",
+                "exclusiveMinimum": 0
+              }
+            }
+          }
+        }
+      }
+    },
+    "record": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "record_id",
+        "symbol",
+        "asset_type",
+        "market",
+        "original_selection",
+        "latest_observation",
+        "status",
+        "approval",
+        "sector_comparison",
+        "follow_ups"
+      ],
+      "properties": {
+        "record_id": {
+          "type": "string",
+          "pattern": "^SMTL-[A-Z0-9-]{1,40}$"
+        },
+        "symbol": {
+          "type": "string",
+          "pattern": "^[A-Z0-9.\\-]{1,20}$"
+        },
+        "company_name": {
+          "type": "string",
+          "maxLength": 160
+        },
+        "asset_type": {
+          "enum": [
+            "equity",
+            "crypto"
+          ]
+        },
+        "market": {
+          "enum": [
+            "NASDAQ100",
+            "SP500",
+            "CRYPTO"
+          ]
+        },
+        "original_selection": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "selected_at_utc",
+            "price",
+            "currency",
+            "price_basis",
+            "source",
+            "source_observed_at_utc"
+          ],
+          "properties": {
+            "selected_at_utc": {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "Z$"
+            },
+            "price": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "currency": {
+              "type": "string",
+              "pattern": "^[A-Z]{3,6}$"
+            },
+            "price_basis": {
+              "enum": [
+                "split_adjusted_close",
+                "unadjusted_close",
+                "intraday"
+              ]
+            },
+            "source": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            },
+            "source_observed_at_utc": {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "Z$"
+            }
+          }
+        },
+        "latest_observation": {
+          "$ref": "#/$defs/observation"
+        },
+        "status": {
+          "enum": [
+            "following",
+            "archived"
+          ]
+        },
+        "approval": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "approved",
+            "approved_at_utc"
+          ],
+          "properties": {
+            "approved": {
+              "const": true
+            },
+            "approved_at_utc": {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "Z$"
+            }
+          }
+        },
+        "sector_comparison": {
+          "$ref": "#/$defs/sector_comparison"
+        },
+        "comparative_series": {
+          "$ref": "#/$defs/comparative_series"
+        },
+        "follow_ups": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "d5",
+            "d10",
+            "d20"
+          ],
+          "properties": {
+            "d5": {
+              "$ref": "#/$defs/follow_up"
+            },
+            "d10": {
+              "$ref": "#/$defs/follow_up"
+            },
+            "d20": {
+              "$ref": "#/$defs/follow_up"
+            }
+          }
+        }
+      }
+    }
+  }
+}
