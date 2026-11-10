@@ -41,7 +41,7 @@ jobs:
           if feed.get("records") != [] or feed.get("schema_version") != "1.0":
               raise SystemExit("Refusing to deploy: expected the approved empty feed.")
           feed["generated_at_utc"] = datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
-          feed_path.write_text(json.dumps(feed, indent=2) + "\\n", encoding="utf-8")
+          feed_path.write_text(json.dumps(feed, indent=2) + "\n", encoding="utf-8")
           PY
 
       - name: Upload Pages artifact
