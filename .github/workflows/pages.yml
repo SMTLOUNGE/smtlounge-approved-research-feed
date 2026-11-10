@@ -1,0 +1,54 @@
+name: Publish approved research feed
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Check out feed files
+        uses: actions/checkout@v4
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Build static feed
+        shell: bash
+        run: |
+          mkdir -p _site/v1 _site/schema
+          cp v1/approved-research-feed.json _site/v1/approved-research-feed.json
+          cp schema/approved-research-feed.schema.json _site/schema/approved-research-feed.schema.json
+          python - <<'PY'
+          import json
+          from datetime import datetime, timezone
+          from pathlib import Path
+
+          feed_path = Path("_site/v1/approved-research-feed.json")
+          feed = json.loads(feed_path.read_text(encoding="utf-8"))
+          if feed.get("records") != [] or feed.get("schema_version") != "1.0":
+              raise SystemExit("Refusing to deploy: expected the approved empty feed.")
+          feed["generated_at_utc"] = datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+          feed_path.write_text(json.dumps(feed, indent=2) + "\\n", encoding="utf-8")
+          PY
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: _site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
